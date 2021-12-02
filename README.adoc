@@ -1,0 +1,36 @@
+= Keytab generator
+
+This Python module is an alternative to `ktutil` for creating a Kerberos keytab.
+
+Similar to newer versions of `ktutil`, it allows for the overriding of the default salt used for encryption of AES keys.
+
+== The salt issue
+
+AES keys stored in the keytab are encrypted using a salt that _typically_ derived from the principal name. By default, the salt is formed by concatenating the REALM with the principal short name.
+
+This works well for MIT KDCs.
+
+For Active Directory (AD) KDCs, the user's login name (`samAccountName`) and principal name (`userPrincipalName`) can sometimes differ.
+For example, a username could have a login name `jdoe` and a principal name of `jane.doe@EXAMPLE.COM` or `JDoe@EXAMPLE.COM`.
+In this case, when encrypting data, AD will use `EXAMPLE.COMjane.doe` or `EXAMPLE.COMJDoe`, respectively, as the salt and the keytab salt must match it for it to work, otherwise the keytab authentication will fail with a "pre-authentication failure".
+
+For FreeIPA, the salt is a random string. To successfully create a keytab you have to always specify the correct salt.
+
+`ktutil` versions 1.16 and above added a `-s` option to the `addent` command that allows you to specify a custom salt for the key.
+The `krb5-workstation` package on Centos 8 machines come with this features but Centos 7 still has version 1.15 of that package, which doesn't allow for salt specification.
+
+This python module works well in both environments and can replace `ktutil` for creating a keytab correctly.
+
+== Validating keytabs and automatically fixing salt issues
+
+If `kinit` is available on the system and `--validate` is specified, the generated keytab will be validated.
+If the validation fails and an alternative salt is reported in the validation process the keytab will be re-generated and re-validated using the reported salt. This behaviour can be suppressed with `--no-alternative-salt`.
+
+== Using in the command line
+
+[source,shell]
+----
+pip install --upgrade pip
+pip install -r requirements.txt
+python keytab.py --help
+----

@@ -1,0 +1,2 @@
+impacket==0.9.24
+setuptools-rust==1.1.1
