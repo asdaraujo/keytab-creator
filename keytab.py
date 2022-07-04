@@ -22,7 +22,9 @@ KRB_NT_PRINCIPAL = struct.pack('>I', 1)
 
 def validate_keytab(path, principal):
     ccache_name = '/tmp/krb5cc.keytab_{}'.format(random.randint(1, 9999999))
-    proc = Popen('export KRB5CCNAME={}; trap "kdestroy" 0; KRB5_TRACE=/dev/stderr kinit -kt {} {}'.format(ccache_name, path, principal), shell=True, stdout=PIPE, stderr=PIPE)
+    proc = Popen('export KRB5CCNAME={}; trap "kdestroy" 0; '
+                 'KRB5_TRACE=/dev/stderr kinit -kt {} {}'.format(ccache_name, path, principal),
+                 shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
     return proc.returncode, stdout, stderr
 
@@ -39,7 +41,8 @@ def create_keytab(path, principal, password, salt=None, validate=False, try_alt_
     if try_alt_salt:
         salts = re.findall(r'salt "([^"]*)"', stderr.decode())
         if salts:
-            LOG.warning('Initial keytab failed. Trying with alternative salt ({}).'.format(salts[0]))
+            LOG.info('Default keytab salt is not valid.'
+                     ' Keytab will be created with an alternative salt ({}).'.format(salts[0]))
             write_keytab(path, principal, password, salts[0])
             ret_code, _, stderr = validate_keytab(path, principal)
 
@@ -99,12 +102,12 @@ def encode_entry(principal, enctype, password, salt=None):
     if not salt:
         tokens = tokenize_principal(principal)
         salt = tokens[-1] + tokens[0]
-    data = encode_principal(principal) + \
-           encode_timestamp() + \
-           KVNO + \
-           struct.pack('>H', enctype) + \
-           encode_key(enctype, password, salt) + \
-           EOF
+    data = (encode_principal(principal) +
+            encode_timestamp() +
+            KVNO +
+            struct.pack('>H', enctype) +
+            encode_key(enctype, password, salt) +
+            EOF)
     return struct.pack('>I', len(data)) + data
 
 
@@ -146,4 +149,5 @@ if __name__ == '__main__':
         if OPTIONS.password != confirm:
             raise RuntimeError("Passwords do not match.")
 
-    create_keytab(OPTIONS.keytab, OPTIONS.principal, OPTIONS.password, OPTIONS.salt, OPTIONS.validate, OPTIONS.try_alt_salt)
+    create_keytab(OPTIONS.keytab, OPTIONS.principal, OPTIONS.password, OPTIONS.salt, OPTIONS.validate,
+                  OPTIONS.try_alt_salt)
