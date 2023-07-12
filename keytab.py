@@ -54,7 +54,7 @@ def create_keytab(path, principal, password, salt=None, validate=False, try_alt_
         return
 
     if try_alt_salt:
-        salts = re.findall(r'salt "([^"]*)"', stderr.decode())
+        salts = re.findall(r'salt "(.*)", params', stderr.decode())
         if salts:
             LOG.info('Default keytab salt is not valid.'
                      ' Keytab will be created with an alternative salt ({}).'.format(salts[0]))
